@@ -1,4 +1,5 @@
 from typing import List, Optional
+import hashlib
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -11,6 +12,10 @@ SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = FastAPI()
+
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 
 class RegisterUser(BaseModel):
@@ -46,18 +51,21 @@ def register(user: RegisterUser):
 
     if auth.user is None:
         raise HTTPException(status_code=400, detail="Registration failed")
+     
+    hashed_password = hash_password(user.password)
 
     supabase.table("users").insert(
         {
             "id": auth.user.id,
             "name": user.name,
             "email": user.email,
+            "password_hash": hashed_password,
         }
     ).execute()
 
     return {
         "id": auth.user.id,
-        "email": auth.user.email,
+        "emailg": auth.user.email,
         "name": user.name,
     }
 
